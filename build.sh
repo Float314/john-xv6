@@ -34,6 +34,13 @@ case "$1" in
         make clean
         rm -f fs.img .gdbinit
         ;;
+    transfer)
+        echo "==> Transferring the image files to destdir : $DESTDIR"
+        
+        cp -v ./fs.img "$DESTDIR/"
+        cp -v ./kernel/kernel "$DESTDIR/xv6-kernel"
+        echo "==> Transfer complete."
+        ;;
     *)
         usage
         ;;

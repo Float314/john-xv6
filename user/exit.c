@@ -4,6 +4,7 @@
 #include "user/user.h"
 
 int main() { 
+    printf("Shutting down the system \n");
     shutdown(); 
     exit(0);
 }

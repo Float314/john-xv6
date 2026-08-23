@@ -145,7 +145,6 @@ getcmd(char *buf, int nbuf)
 int
 main(void)
 {
-  printf("xv6 Shell. Copyright (C) 2026, Frans Kaashoek, Robert Morris, Russ Cox, Massachusetts Institute of Technology \n");
   static char buf[100];
   int fd;
 

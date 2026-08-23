@@ -46,3 +46,5 @@ You will need a RISC-V "newlib" tool chain from
 https://github.com/riscv/riscv-gnu-toolchain, and qemu compiled for
 riscv64-softmmu.  Once they are installed, and in your shell
 search path, you can run "make qemu".
+
+qemu-system-riscv64 -machine virt -bios default -kernel ./kernel/kernel -m 128M -smp 3 -drive file=./fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0
