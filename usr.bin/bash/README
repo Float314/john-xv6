@@ -1,3 +1,9 @@
+# Sash shell - Minimal Bash-like shell. 
+
+Sash shell is the minimal Bash shell alike out there. Thx David I. Bell!
+
+## original readme
+
 This is release 3.4 of sash, my stand-alone shell for Linux.
 
 The purpose of this program is to make system recovery possible in

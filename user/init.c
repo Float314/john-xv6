@@ -10,6 +10,7 @@
 #include "kernel/fcntl.h"
 
 char *argv[] = {"sh", 0};
+char *sashargv[] = {"sash", "-q", "-a", 0};
 
 int
 main(void)
@@ -31,6 +32,7 @@ main(void)
       exit(1);
     }
     if (pid == 0) {
+      exec("sash", sashargv);
       exec("sh", argv);
       printf("init: exec sh failed\n");
       exit(1);

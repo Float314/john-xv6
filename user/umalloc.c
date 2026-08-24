@@ -88,3 +88,31 @@ malloc(uint nbytes)
         return 0;
   }
 }
+
+void *
+realloc(void *ap, uint nbytes)
+{
+  Header *bp, *np;
+  uint nunits, cunits;
+
+  if (ap == 0)
+    return malloc(nbytes);
+  if (nbytes == 0) {
+    free(ap);
+    return 0;
+  }
+
+  bp = (Header *)ap - 1;
+  nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1;
+  cunits = bp->s.size;
+
+  if (cunits >= nunits)
+    return ap;
+
+  np = malloc(nbytes);
+  if (np == 0)
+    return 0;
+  memcpy(np, ap, (cunits - 1) * sizeof(Header));
+  free(ap);
+  return np;
+}

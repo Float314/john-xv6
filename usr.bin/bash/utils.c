@@ -8,11 +8,6 @@
 
 #include "sash.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <utime.h>
-
 
 /*
  * A chunk of data.
@@ -182,7 +177,6 @@ copyFile(
 	char		buf[BUF_SIZE];
 	struct	stat	statBuf1;
 	struct	stat	statBuf2;
-	struct	utimbuf	times;
 	
 	if (stat(srcName, &statBuf1) < 0)
 	{
@@ -253,17 +247,10 @@ copyFile(
 		return FALSE;
 	}
 
-	if (setModes)
-	{
-		(void) chmod(destName, statBuf1.st_mode);
-
-		(void) chown(destName, statBuf1.st_uid, statBuf1.st_gid);
-
-		times.actime = statBuf1.st_atime;
-		times.modtime = statBuf1.st_mtime;
-
-		(void) utime(destName, &times);
-	}
+	/*
+	 * (The upstream setModes block - chmod/chown/utime - is gone:
+	 * xv6 has no way to change ownership or timestamps.)
+	 */
 
 	return TRUE;
 

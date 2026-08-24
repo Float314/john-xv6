@@ -8,27 +8,6 @@
 
 #include "sash.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/mount.h>
-#include <signal.h>
-#include <pwd.h>
-#include <grp.h>
-#include <utime.h>
-#include <errno.h>
-#include <linux/fs.h>
-
-/* Need to tell loop.h what the actual dev_t type is. */
-#undef dev_t
-#if defined(__alpha) || (defined(__sparc__) && defined(__arch64__))
-#define dev_t unsigned int
-#else
-#define dev_t unsigned short
-#endif
-#include <linux/loop.h>
-#undef dev_t
-#define dev_t dev_t
-
 void
 do_echo(int argc, const char ** argv)
 {
@@ -106,17 +85,10 @@ void
 do_mknod(int argc, const char ** argv)
 {
 	const char *	cp;
-	int		mode;
 	int		major;
 	int		minor;
 
-	mode = 0666;
-
-	if (strcmp(argv[2], "b") == 0)
-		mode |= S_IFBLK;
-	else if (strcmp(argv[2], "c") == 0)
-		mode |= S_IFCHR;
-	else
+	if ((strcmp(argv[2], "b") != 0) && (strcmp(argv[2], "c") != 0))
 	{
 		fprintf(stderr, "Bad device type\n");
 
@@ -149,7 +121,7 @@ do_mknod(int argc, const char ** argv)
 		return;
 	}
 
-	if (mknod(argv[1], mode, major * 256 + minor) < 0)
+	if (mknod(argv[1], major, minor) < 0)
 		perror(argv[1]);
 }
 
@@ -210,168 +182,24 @@ do_rm(int argc, const char ** argv)
 
 
 void
-do_chmod(int argc, const char ** argv)
-{
-	const char *	cp;
-	int		mode;
-
-	mode = 0;
-	cp = argv[1];
-
-	while (isOctal(*cp))
-		mode = mode * 8 + (*cp++ - '0');
-
-	if (*cp)
-	{
-		fprintf(stderr, "Mode must be octal\n");
-
-		return;
-	}
-
-	argc--;
-	argv++;
-
-	while (argc-- > 1)
-	{
-		if (chmod(argv[1], mode) < 0)
-			perror(argv[1]);
-
-		argv++;
-	}
-}
-
-
-void
-do_chown(int argc, const char ** argv)
-{
-	const char *	cp;
-	int		uid;
-	struct passwd *	pwd;
-	struct stat	statBuf;
-
-	cp = argv[1];
-
-	if (isDecimal(*cp))
-	{
-		uid = 0;
-
-		while (isDecimal(*cp))
-			uid = uid * 10 + (*cp++ - '0');
-
-		if (*cp)
-		{
-			fprintf(stderr, "Bad uid value\n");
-
-			return;
-		}
-	} else {
-		pwd = getpwnam(cp);
-
-		if (pwd == NULL)
-		{
-			fprintf(stderr, "Unknown user name\n");
-
-			return;
-		}
-
-		uid = pwd->pw_uid;
-	}
-
-	argc--;
-	argv++;
-
-	while (argc-- > 1)
-	{
-		argv++;
-
-		if ((stat(*argv, &statBuf) < 0) ||
-			(chown(*argv, uid, statBuf.st_gid) < 0))
-		{
-			perror(*argv);
-		}
-	}
-}
-
-
-void
-do_chgrp(int argc, const char ** argv)
-{
-	const char *	cp;
-	int		gid;
-	struct group *	grp;
-	struct stat	statBuf;
-
-	cp = argv[1];
-
-	if (isDecimal(*cp))
-	{
-		gid = 0;
-
-		while (isDecimal(*cp))
-			gid = gid * 10 + (*cp++ - '0');
-
-		if (*cp)
-		{
-			fprintf(stderr, "Bad gid value\n");
-
-			return;
-		}
-	}
-	else
-	{
-		grp = getgrnam(cp);
-
-		if (grp == NULL)
-		{
-			fprintf(stderr, "Unknown group name\n");
-
-			return;
-		}
-
-		gid = grp->gr_gid;
-	}
-
-	argc--;
-	argv++;
-
-	while (argc-- > 1)
-	{
-		argv++;
-
-		if ((stat(*argv, &statBuf) < 0) ||
-			(chown(*argv, statBuf.st_uid, gid) < 0))
-		{
-			perror(*argv);
-		}
-	}
-}
-
-
-void
 do_touch(int argc, const char ** argv)
 {
 	const char *	name;
 	int		fd;
-	struct utimbuf	now;
-
-	time(&now.actime);
-	now.modtime = now.actime;
 
 	while (argc-- > 1)
 	{
 		name = *(++argv);
 
-		fd = open(name, O_CREAT | O_WRONLY | O_EXCL, 0666);
+		fd = open(name, O_CREATE | O_WRONLY | O_TRUNC);
 
 		if (fd >= 0)
-		{
 			close(fd);
 
-			continue;
-		}
-
-		if (utime(name, &now) < 0)
-			perror(name);
+		/*
+		 * If the file already exists we leave it alone: xv6
+		 * keeps no timestamps that could be updated.
+		 */
 	}
 }
 
@@ -531,72 +359,6 @@ do_cp(int argc, const char ** argv)
 
 		(void) copyFile(srcName, destName, FALSE);
 	}
-}
-
-
-void
-do_mount(int argc, const char ** argv)
-{
-	const char *	str;
-	const char *	type;
-	int		flags;
-
-	argc--;
-	argv++;
-	type = "ext2";
-	flags = MS_MGC_VAL;
-
-	while ((argc > 0) && (**argv == '-'))
-	{
-		argc--;
-		str = *argv++;
-
-		while (*++str) switch (*str)
-		{
-			case 't':
-				if ((argc <= 0) || (**argv == '-'))
-				{
-					fprintf(stderr, "Missing file system type\n");
-
-					return;
-				}
-
-				type = *argv++;
-				argc--;
-				break;
-
-			case 'r':
-				flags |= MS_RDONLY;
-				break;
-
-			case 'm':
-				flags |= MS_REMOUNT;
-				break;
-
-			default:
-				fprintf(stderr, "Unknown option\n");
-
-				return;
-		}
-	}
-
-	if (argc != 2)
-	{
-		fprintf(stderr, "Wrong number of arguments for mount\n");
-
-		return;
-	}
-
-	if (mount(argv[0], argv[1], type, flags, 0) < 0)
-		perror("mount failed");
-}
-
-
-void
-do_umount(int argc, const char ** argv)
-{
-	if (umount(argv[1]) < 0)
-		perror(argv[1]);
 }
 
 
@@ -1003,38 +765,6 @@ do_printenv(int argc, const char ** argv)
 
 
 void
-do_umask(int argc, const char ** argv)
-{
-	const char *	cp;
-	int		mask;
-
-	if (argc <= 1)
-	{
-		mask = umask(0);
-		umask(mask);
-		printf("%03o\n", mask);
-
-		return;
-	}
-
-	mask = 0;
-	cp = argv[1];
-
-	while (isOctal(*cp))
-		mask = mask * 8 + *cp++ - '0';
-
-	if (*cp || (mask & ~0777))
-	{
-		fprintf(stderr, "Bad umask value\n");
-
-		return;
-	}
-
-	umask(mask);
-}
-
-
-void
 do_kill(int argc, const char ** argv)
 {
 	const char *	cp;
@@ -1158,7 +888,7 @@ do_where(int argc, const char ** argv)
 		 */
 		dirName = path;
 
-		if (dirName == '\0')
+		if (*dirName == '\0')
 			dirName = ".";
 
 		/*

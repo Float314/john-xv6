@@ -8,12 +8,6 @@
 
 #include "sash.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <pwd.h>
-#include <grp.h>
-
 
 #define	LISTSIZE	8192
 
@@ -352,19 +346,14 @@ listFile(
 )
 {
 	char *		cp;
-	struct passwd *	pwd;
-	struct group *	grp;
-	int		len;
 	int		mode;
 	int		flagChar;
 	int		usedWidth;
 	char		buf[PATH_LEN];
 	static	char	userName[12];
-	static	int	userId;
-	static	BOOL	userIdKnown;
+	static	BOOL	userNameKnown;
 	static	char	groupName[12];
-	static	int	groupId;
-	static	BOOL	groupIdKnown;
+	static	BOOL	groupNameKnown;
 
 	mode = statBuf->st_mode;
 
@@ -380,12 +369,14 @@ listFile(
 	 */
 	if (flags & LSF_INODE)
 	{
-		sprintf(cp, "%7ld ", statBuf->st_ino);
+		sprintf(cp, "%7ld ", (long) statBuf->st_ino);
 		cp += strlen(cp);
 	}
 
 	/*
 	 * Create the long status line if requested.
+	 * xv6 has no user or group database, so the numeric ids
+	 * are printed directly.
 	 */
 	if (flags & LSF_LONG)
 	{
@@ -395,33 +386,19 @@ listFile(
 		sprintf(cp, "%3d ", statBuf->st_nlink);
 		cp += strlen(cp);
 
-		if (!userIdKnown || (statBuf->st_uid != userId))
+		if (!userNameKnown)
 		{
-			pwd = getpwuid(statBuf->st_uid);
-
-			if (pwd)
-				strcpy(userName, pwd->pw_name);
-			else
-				sprintf(userName, "%d", statBuf->st_uid);
-
-			userId = statBuf->st_uid;
-			userIdKnown = TRUE;
+			sprintf(userName, "%d", statBuf->st_uid);
+			userNameKnown = TRUE;
 		}
 
 		sprintf(cp, "%-8s ", userName);
 		cp += strlen(cp);
 
-		if (!groupIdKnown || (statBuf->st_gid != groupId))
+		if (!groupNameKnown)
 		{
-			grp = getgrgid(statBuf->st_gid);
-
-			if (grp)
-				strcpy(groupName, grp->gr_name);
-			else
-				sprintf(groupName, "%d", statBuf->st_gid);
-
-			groupId = statBuf->st_gid;
-			groupIdKnown = TRUE;
+			sprintf(groupName, "%d", statBuf->st_gid);
+			groupNameKnown = TRUE;
 		}
 
 		sprintf(cp, "%-8s ", groupName);

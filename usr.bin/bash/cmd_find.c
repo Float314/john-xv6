@@ -6,11 +6,6 @@
  * The "find" built-in command.
  */
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <errno.h>
-
 #include "sash.h"
 
 
@@ -314,11 +309,13 @@ testFile(const char * fullName, const struct stat * statBuf)
 
 					break;
 
+#ifdef	S_ISSOCK
 				case 's':
 					if (S_ISSOCK(mode))
 						wantType = TRUE;
 
 					break;
+#endif
 
 #ifdef	S_ISLNK
 				case 'l':

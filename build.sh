@@ -41,6 +41,10 @@ case "$1" in
         cp -v ./kernel/kernel "$DESTDIR/xv6-kernel"
         echo "==> Transfer complete."
         ;;
+    push)
+        echo "==> Pushing to github"
+        git push origin master
+        ;;
     *)
         usage
         ;;

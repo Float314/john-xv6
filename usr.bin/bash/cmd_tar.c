@@ -9,11 +9,6 @@
 
 #include "sash.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <errno.h>
-
 
 /*
  * Tar file constants.
@@ -358,7 +353,6 @@ readHeader(const TarHeader * hp, int fileCount, const char ** fileTable)
 	int		mode;
 	int		uid;
 	int		gid;
-	int		checkSum;
 	long		size;
 	time_t		mtime;
 	const char *	name;
@@ -394,7 +388,7 @@ readHeader(const TarHeader * hp, int fileCount, const char ** fileTable)
 	gid = getOctal(hp->gid, sizeof(hp->gid));
 	size = getOctal(hp->size, sizeof(hp->size));
 	mtime = getOctal(hp->mtime, sizeof(hp->mtime));
-	checkSum = getOctal(hp->checkSum, sizeof(hp->checkSum));
+	(void) getOctal(hp->checkSum, sizeof(hp->checkSum));
 
 	if ((mode < 0) || (uid < 0) || (gid < 0) || (size < 0))
 	{
@@ -537,7 +531,7 @@ readHeader(const TarHeader * hp, int fileCount, const char ** fileTable)
 	/*
 	 * Start the output file.
 	 */
-	outFd = open(name, O_WRONLY | O_CREAT | O_TRUNC, mode);
+	outFd = open(name, O_WRONLY | O_CREAT | O_TRUNC);
 
 	if (outFd < 0)
 	{
@@ -631,7 +625,7 @@ writeTarFile(int fileCount, const char ** fileTable)
 	/*
 	 * Create the tar file for writing.
 	 */
-	tarFd = open(tarName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	tarFd = open(tarName, O_WRONLY | O_CREAT | O_TRUNC);
 
 	if (tarFd < 0)
 	{
@@ -643,7 +637,7 @@ writeTarFile(int fileCount, const char ** fileTable)
 	/*
 	 * Get the device and inode of the tar file for checking later.
 	 */
-	if (fstat(tarFd, &statbuf) < 0)
+	if (stat(tarName, &statbuf) < 0)
 	{
 		perror(tarName);
 
@@ -666,8 +660,10 @@ writeTarFile(int fileCount, const char ** fileTable)
 		fprintf(stderr, "Interrupted - aborting archiving\n");
 
 	/*
-	 * Now write an empty block of zeroes to end the archive.
+	 * Now write two empty blocks of zeroes to end the archive,
+	 * as the tar standard requires.
 	 */
+	writeTarBlock("", 1);
 	writeTarBlock("", 1);
 
 

@@ -6,8 +6,6 @@
  * The "grep" built-in command.
  */
 
-#include <ctype.h>
-
 #include "sash.h"
 
 

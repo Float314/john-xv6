@@ -6,11 +6,6 @@
  * The "file" built-in command.
  */
 
-#include <ctype.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include "sash.h"
 
 

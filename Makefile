@@ -99,6 +99,33 @@ tags: $(OBJS)
 
 ULIB = $U/ulib.o $U/usys.o $U/printf.o $U/umalloc.o
 
+# The stand-alone shell (sash).  It brings its own libc facade
+# (usr.bin/bash/xv6compat.c), so the stock user/lib printf is NOT
+# linked into it - xv6compat provides a fuller printf/fprintf instead.
+SASHDIR = usr.bin/bash
+SASHLIB = $U/ulib.o $U/usys.o $U/umalloc.o
+SASHOBJS =\
+	$(SASHDIR)/xv6compat.o\
+	$(SASHDIR)/sash.o\
+	$(SASHDIR)/cmds.o\
+	$(SASHDIR)/utils.o\
+	$(SASHDIR)/cmd_ls.o\
+	$(SASHDIR)/cmd_grep.o\
+	$(SASHDIR)/cmd_dd.o\
+	$(SASHDIR)/cmd_ed.o\
+	$(SASHDIR)/cmd_find.o\
+	$(SASHDIR)/cmd_file.o\
+	$(SASHDIR)/cmd_tar.o\
+
+$U/_sash: $(SASHOBJS) $(SASHLIB) $U/user.ld
+	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $(SASHOBJS) $(SASHLIB)
+	# sash is much larger than any other user program; drop the
+	# debug sections so it still fits inside the xv6 filesystem
+	# (MAXFILE * BSIZE limit enforced by mkfs).
+	riscv64-unknown-elf-objcopy --strip-debug $@
+	$(OBJDUMP) -S $@ > $@.asm
+	$(OBJDUMP) -t $@ | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$$/d' > $@.sym
+
 _%: %.o $(ULIB) $U/user.ld
 	$(LD) $(LDFLAGS) -T $U/user.ld -o $@ $< $(ULIB)
 	$(OBJDUMP) -S $@ > $*.asm
@@ -136,6 +163,7 @@ UPROGS=\
 	$U/_ls\
 	$U/_mkdir\
 	$U/_rm\
+	$U/_sash\
 	$U/_sh\
 	$U/_stressfs\
 	$U/_usertests\
@@ -146,16 +174,17 @@ UPROGS=\
 	$U/_forphan\
 	$U/_dorphan\
 	$U/_sync\
-	$U/_exit\
+	$U/_shutdown\
 	
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
 
--include kernel/*.d user/*.d
+-include kernel/*.d user/*.d usr.bin/bash/*.d
 
 clean: 
 	rm -f *.tex *.dvi *.idx *.aux *.log *.ind *.ilg \
 	*/*.o */*.d */*.asm */*.sym \
+	*/*/*.o */*/*.d */*/*.asm */*/*.sym \
 	$K/kernel fs.img \
 	mkfs/mkfs .gdbinit \
         $U/usys.S \

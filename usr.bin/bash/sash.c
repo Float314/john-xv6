@@ -3,14 +3,9 @@
  * Permission is granted to use, distribute, or modify this source,
  * provided that this copyright notice remains intact.
  *
- * Stand-alone shell for system maintainance for Linux.
- * This program should NOT be built using shared libraries.
+ * Stand-alone shell ported to xv6-riscv.
+ * All libc services come from the facade in sash.h / xv6compat.c.
  */
-
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <errno.h>
 
 #include "sash.h"
 
@@ -58,41 +53,9 @@ static const CommandEntry	commandEntryTable[] =
 	},
 
 	{
-		"-ar",		do_ar,		3,	INFINITE_ARGS,
-		"Extract or list files from an AR file",
-		"[txp]v arFileName fileName ..."
-	},
-
-	{
 		"cd",		do_cd,		1,	2,
 		"Change current directory",
 		"[dirName]"
-	},
-
-#ifdef	HAVE_EXT2
-	{
-		"-chattr",	do_chattr,	3,	INFINITE_ARGS,
-		"Change ext2 file attributes",
-		"[+i] [-i] [+a] [-a] fileName ..."
-	},
-#endif
-
-	{
-		"-chgrp",	do_chgrp,	3,	INFINITE_ARGS,
-		"Change the group id of some files",
-		"gid fileName ..."
-	},
-
-	{
-		"-chmod",	do_chmod,	3,	INFINITE_ARGS,
-		"Change the protection of some files",
-		"mode fileName ..."
-	},
-
-	{
-		"-chown",	do_chown,	3,	INFINITE_ARGS,
-		"Change the owner id of some files",
-		"uid fileName ..."
 	},
 
 	{
@@ -218,7 +181,7 @@ static const CommandEntry	commandEntryTable[] =
 #endif
 
 	{
-		"-mkdir",	do_mkdir,	2,	INFINITE_ARGS,
+		"mkdir",	do_mkdir,	1,	INFINITE_ARGS,
 		"Create a directory",
 		"dirName ..."
 	},
@@ -233,12 +196,6 @@ static const CommandEntry	commandEntryTable[] =
 		"-more",	do_more,	2,	INFINITE_ARGS,
 		"Type file contents page by page",
 		"fileName ..."
-	},
-
-	{
-		"-mount",	do_mount,	3,	INFINITE_ARGS,
-		"Mount or remount a filesystem on a directory",
-		"[-t type] [-r] [-m] devName dirName"
 	},
 
 	{
@@ -328,18 +285,6 @@ static const CommandEntry	commandEntryTable[] =
 	},
 
 	{
-		"umask",	do_umask,	1,	2,
-		"Set the umask value for file protections",
-		"[mask]"
-	},
-
-	{
-		"-umount",	do_umount,	2,	2,
-		"Unmount a filesystem",
-		"fileName"
-	},
-
-	{
 		"unalias",	do_unalias,	2,	2,
 		"Remove a command alias",
 		"name"
@@ -378,15 +323,12 @@ static	int	aliasCount;
 static	FILE *	sourcefiles[MAX_SOURCE];
 static	int	sourceCount;
 
-static	BOOL	intCrlf = TRUE;
 static	char *	prompt;
 
 
 /*
  * Local procedures.
  */
-static	void	catchInt(int);
-static	void	catchQuit(int);
 static	void	readFile(const char * name);
 static	void	command(const char * cmd);
 static	BOOL	tryBuiltIn(const char * cmd);
@@ -488,10 +430,11 @@ main(int argc, const char ** argv)
 		}
 
 	/*
-	 * Default our path if it is not set.
+	 * Default our path if it is not set.  Under xv6 everything
+	 * lives in the root directory.
 	 */
 	if (getenv("PATH") == NULL)
-		putenv("PATH=/bin:/usr/bin:/sbin:/usr/sbin:/etc");
+		putenv("PATH=/");
 
 	/*
 	 * If the alias flag is set then define all aliases.
@@ -519,9 +462,6 @@ main(int argc, const char ** argv)
 		if (aliasFlag)
 			printf("Built-in commands are aliased to standard commands\n");
 	}
-
-	signal(SIGINT, catchInt);
-	signal(SIGQUIT, catchQuit);
 
 	/*
 	 * Execute the user's alias file if present.
@@ -791,63 +731,18 @@ tryBuiltIn(const char * cmd)
 
 
 /*
- * Execute the specified command either by forking and executing
- * the program ourself, or else by using the shell.
+ * Execute the specified command by forking and executing the
+ * program along the PATH list.
+ * (The upstream shell-character handling via system() is gone:
+ * xv6 has no second shell to delegate to, and no pipes or
+ * redirection are supported.)
  */
 static void
 runCmd(const char * cmd)
 {
-	const char *	cp;
-	BOOL		magic;
 	pid_t		pid;
 	int		status;
 
-	/*
-	 * Check the command for any magic shell characters
-	 * except for quoting.
-	 */
-	magic = FALSE;
-
-	for (cp = cmd; *cp; cp++)
-	{
-		if ((*cp >= 'a') && (*cp <= 'z'))
-			continue;
-
-		if ((*cp >= 'A') && (*cp <= 'Z'))
-			continue;
-
-		if (isDecimal(*cp))
-			continue;
-
-		if (isBlank(*cp))
-			continue;
-
-		if ((*cp == '.') || (*cp == '/') || (*cp == '-') ||
-			(*cp == '+') || (*cp == '=') || (*cp == '_') ||
-			(*cp == ':') || (*cp == ',') || (*cp == '\'') ||
-			(*cp == '"'))
-		{
-			continue;
-		}
-
-		magic = TRUE;
-	}
-
-	/*
-	 * If there were any magic characters used then run the
-	 * command using the shell.
-	 */
-	if (magic)
-	{
-		system(cmd);
-
-		return;
-	}
-
-	/*
-	 * No magic characters were in the command, so we can do the fork
-	 * and exec ourself.
-	 */
 	pid = fork();
 
 	if (pid < 0)
@@ -868,19 +763,8 @@ runCmd(const char * cmd)
 	 * Wait for the child to complete.
 	 */
 	status = 0;
-	intCrlf = FALSE;
 
-	while (((pid = waitpid(pid, &status, 0)) < 0) && (errno == EINTR))
-		;
-
-	intCrlf = TRUE;
-
-	if (pid < 0)
-	{
-		fprintf(stderr, "Error from waitpid: %s", strerror(errno));
-
-		return;
-	}
+	waitpid(pid, &status, 0);
 
 	if (WIFSIGNALED(status))
 	{
@@ -892,7 +776,6 @@ runCmd(const char * cmd)
 
 /*
  * Here as the child process to try to execute the command.
- * This is only called if there are no meta-characters in the command.
  * This procedure never returns.
  */
 static void
@@ -912,13 +795,9 @@ childProcess(const char * cmd)
 
 	/*
 	 * Break the command line up into individual arguments.
-	 * If this fails, then run the shell to execute the command.
 	 */
 	if (!makeArgs(cmd, &argc, &argv))
-	{
-		system(cmd);
-		exit(0);
-	}
+		exit(1);
 
 	/*
 	 * Try to execute the program directly.
@@ -926,17 +805,7 @@ childProcess(const char * cmd)
 	execvp(argv[0], (char **) argv);
 
 	/*
-	 * The exec failed, so try to run the command using the shell
-	 * in case it is a shell script.
-	 */
-	if (errno == ENOEXEC)
-	{
-		system(cmd);
-		exit(0);
-	}
-
-	/*
-	 * There was something else wrong, complain and exit.
+	 * There was something wrong, complain and exit.
 	 */
 	perror(argv[0]);
 	exit(1);
@@ -1241,30 +1110,6 @@ showPrompt(void)
 
 	write(STDOUT, cp, strlen(cp));
 }	
-
-
-static void
-catchInt(int val)
-{
-	signal(SIGINT, catchInt);
-
-	intFlag = TRUE;
-
-	if (intCrlf)
-		write(STDOUT, "\n", 1);
-}
-
-
-static void
-catchQuit(int val)
-{
-	signal(SIGQUIT, catchQuit);
-
-	intFlag = TRUE;
-
-	if (intCrlf)
-		write(STDOUT, "\n", 1);
-}
 
 
 /*
