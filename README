@@ -12,10 +12,9 @@ My attempt to modernise the kernel. Its got way too many addons.
 ```
 *fig - John-xv6 logo* 
 
-# todo 
--[x] minimal bash (sash) 
--[ ] Networking support 
--[ ] Unicode support maybe + ANSI supp. 
+# Note  
+
+Erymanthus command can only be accessed thru the kern-unsafe branch! 
 
 # licensing 
 
