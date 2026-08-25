@@ -137,7 +137,6 @@ printk(char *fmt, ...)
 void
 panic(char *s)
 {
-  printk("\033[2J\033[H");
   panicking = 1;
   printk(" =============== KERNEL PANIC ================= \n");
   printk("A Kernel panic has happened. You need to restart \n");

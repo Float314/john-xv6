@@ -118,3 +118,11 @@ sys_shutdown(void)
   *p = 0x5555;
   return 0;
 }
+
+uint64
+sys_crash(void)
+{
+  panic("crash");
+  return 0;
+}
+
