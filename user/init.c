@@ -32,7 +32,7 @@ main(void)
       exit(1);
     }
     if (pid == 0) {
-      exec("sash", sashargv);
+      exec("sh", sashargv);
       exec("sh", argv);
       printf("init: exec sh failed\n");
       exit(1);
