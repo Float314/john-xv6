@@ -181,6 +181,13 @@ UPROGS=\
 	$U/_touch\
 	$U/_sleep\
 	$U/_pwd\
+	$U/_nice\
+	$U/_renice\
+	$U/_cowsay\
+	$U/_bc\
+	$U/_bcache-stats\
+	$U/_meminfo\
+	$U/_pstree\
 	
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

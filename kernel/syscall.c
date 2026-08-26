@@ -103,6 +103,11 @@ extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_sync(void);
+extern uint64 sys_nice(void);
+extern uint64 sys_renice(void);
+extern uint64 sys_bcachestats(void);
+extern uint64 sys_meminfo(void);
+extern uint64 sys_getprocs(void);
 extern uint64 sys_shutdown(void);
 
 // An array mapping syscall numbers from syscall.h
@@ -131,6 +136,11 @@ static uint64 (*syscalls[])(void) = {
   [SYS_mkdir]   sys_mkdir,
   [SYS_close]   sys_close,
   [SYS_sync]    sys_sync,
+  [SYS_nice]    sys_nice,
+  [SYS_renice]  sys_renice,
+  [SYS_bcachestats] sys_bcachestats,
+  [SYS_meminfo] sys_meminfo,
+  [SYS_getprocs] sys_getprocs,
   [SYS_shutdown] sys_shutdown,
   // clang-format on
 };

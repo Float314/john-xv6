@@ -25,6 +25,11 @@ char *sys_sbrk(int, int);
 int pause(int);
 int uptime(void);
 int sync(void);
+int nice(int);
+int renice(int, int);
+int bcachestats(void *);
+int meminfo(void);
+int getprocs(void *, int);
 int shutdown(void);
 
 // ulib.c
