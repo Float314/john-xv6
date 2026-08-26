@@ -12,7 +12,7 @@ getcwd(char *buf, int len)
   char path[128];
   char comp[DIRSIZ + 1];
   struct stat st_cur, st_up;
-  int fd, n, off, found;
+  int fd, found;
   
   path[0] = '\0';
 

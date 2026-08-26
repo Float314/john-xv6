@@ -104,3 +104,5 @@ struct proc {
   char name[16];               // Process name (debugging)
   int priority;                // Process priority (0-20, lower is higher)
 };
+
+extern struct proc proc[NPROC];

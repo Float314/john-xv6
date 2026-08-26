@@ -419,22 +419,6 @@ setenv(const char * name, const char * value, int overwrite)
  * --------------------------------------------------------------------
  */
 char *
-strcat(char * dst, const char * src)
-{
-	char *	odst;
-
-	odst = dst;
-
-	while (*dst)
-		dst++;
-
-	while ((*dst++ = *src++) != 0)
-		;
-
-	return odst;
-}
-
-char *
 strncat(char * dst, const char * src, size_t len)
 {
 	char *	odst;
