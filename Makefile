@@ -176,6 +176,11 @@ UPROGS=\
 	$U/_dorphan\
 	$U/_sync\
 	$U/_shutdown\
+	$U/_cp\
+	$U/_mv\
+	$U/_touch\
+	$U/_sleep\
+	$U/_pwd\
 	
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
