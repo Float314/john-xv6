@@ -150,6 +150,17 @@ memcpy(void *dst, const void *src, uint n)
 }
 
 char *
+strcat(char *dst, const char *src)
+{
+  char *odst = dst;
+  while (*dst)
+    dst++;
+  while ((*dst++ = *src++) != 0)
+    ;
+  return odst;
+}
+
+char *
 sbrk(int n)
 {
   return sys_sbrk(n, SBRK_EAGER);

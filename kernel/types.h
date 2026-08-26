@@ -8,3 +8,16 @@ typedef unsigned int uint32;
 typedef unsigned long uint64;
 
 typedef uint64 pde_t;
+
+struct bcachestats {
+  uint hits;
+  uint misses;
+};
+
+struct procinfo {
+  int pid;
+  int ppid;
+  char name[16];
+  int state;
+  int priority;
+};

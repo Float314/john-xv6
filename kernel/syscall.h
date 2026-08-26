@@ -21,4 +21,9 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_sync   22
-#define SYS_shutdown 22
+#define SYS_nice   23
+#define SYS_renice 24
+#define SYS_bcachestats 25
+#define SYS_meminfo 26
+#define SYS_getprocs 27
+#define SYS_shutdown 28

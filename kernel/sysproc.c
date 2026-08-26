@@ -112,6 +112,88 @@ sys_uptime(void)
 }
 
 uint64
+sys_nice(void)
+{
+  int n;
+  argint(0, &n);
+  struct proc *p = myproc();
+  acquire(&p->lock);
+  p->priority += n;
+  if (p->priority < 0)
+    p->priority = 0;
+  if (p->priority > 20)
+    p->priority = 20;
+  release(&p->lock);
+  return 0;
+}
+
+uint64
+sys_renice(void)
+{
+  int pid, priority;
+  struct proc *p;
+
+  argint(0, &pid);
+  argint(1, &priority);
+
+  if (priority < 0)
+    priority = 0;
+  if (priority > 20)
+    priority = 20;
+
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->pid == pid) {
+      p->priority = priority;
+      release(&p->lock);
+      return 0;
+    }
+    release(&p->lock);
+  }
+  return -1;
+}
+
+uint64
+sys_meminfo(void)
+{
+  return kfree_mem();
+}
+
+uint64
+sys_getprocs(void)
+{
+  uint64 addr;
+  int max;
+  argaddr(0, &addr);
+  argint(1, &max);
+
+  struct procinfo info;
+  struct proc *p;
+  int count = 0;
+
+  for (p = proc; p < &proc[NPROC] && count < max; p++) {
+    acquire(&p->lock);
+    if (p->state != UNUSED) {
+      info.pid = p->pid;
+      info.ppid = p->parent ? p->parent->pid : 0;
+      safestrcpy(info.name, p->name, sizeof(info.name));
+      info.state = p->state;
+      info.priority = p->priority;
+      release(&p->lock);
+
+      if (copyout(myproc()->pagetable, myproc()->sz,
+                  addr + count * sizeof(struct procinfo), (char *)&info,
+                  sizeof(struct procinfo)) < 0)
+        return -1;
+      count++;
+    } else {
+      release(&p->lock);
+    }
+  }
+  return count;
+}
+
+uint64
 sys_shutdown(void) 
 {
   volatile uint32 *p = (volatile uint32 *) TEST;

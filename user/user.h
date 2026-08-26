@@ -25,6 +25,11 @@ char *sys_sbrk(int, int);
 int pause(int);
 int uptime(void);
 int sync(void);
+int nice(int);
+int renice(int, int);
+int bcachestats(void *);
+int meminfo(void);
+int getprocs(void *, int);
 int shutdown(void);
 
 // ulib.c
@@ -39,6 +44,7 @@ void *memset(void *, int, uint);
 int atoi(const char *);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
+char *strcat(char *, const char *);
 char *sbrk(int);
 char *sbrklazy(int);
 

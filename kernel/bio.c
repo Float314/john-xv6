@@ -30,6 +30,8 @@ struct {
   // Sorted by how recently the buffer was used.
   // head.next is most recent, head.prev is least.
   struct buf head;
+  uint hits;
+  uint misses;
 } bcache;
 
 void
@@ -65,6 +67,7 @@ bget(uint dev, uint blockno)
   for (b = bcache.head.next; b != &bcache.head; b = b->next) {
     if (b->dev == dev && b->blockno == blockno) {
       b->refcnt++;
+      bcache.hits++;
       release(&bcache.lock);
       acquiresleep(&b->lock);
       return b;
@@ -72,6 +75,7 @@ bget(uint dev, uint blockno)
   }
 
   // Not cached.
+  bcache.misses++;
   // Recycle the least recently used (LRU) unused buffer.
   for (b = bcache.head.prev; b != &bcache.head; b = b->prev) {
     if (b->refcnt == 0) {
@@ -149,5 +153,14 @@ bunpin(struct buf *b)
 {
   acquire(&bcache.lock);
   b->refcnt--;
+  release(&bcache.lock);
+}
+
+void
+get_bcache_stats(struct bcachestats *st)
+{
+  acquire(&bcache.lock);
+  st->hits = bcache.hits;
+  st->misses = bcache.misses;
   release(&bcache.lock);
 }

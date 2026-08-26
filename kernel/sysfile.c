@@ -521,3 +521,17 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_bcachestats(void)
+{
+  uint64 addr;
+  argaddr(0, &addr);
+  struct bcachestats stats;
+  extern void get_bcache_stats(struct bcachestats *);
+  get_bcache_stats(&stats);
+  if (copyout(myproc()->pagetable, myproc()->sz, addr, (char *)&stats,
+              sizeof(stats)) < 0)
+    return -1;
+  return 0;
+}
